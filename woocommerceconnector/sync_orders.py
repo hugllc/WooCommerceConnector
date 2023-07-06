@@ -40,6 +40,10 @@ def sync_woocommerce_orders():
                         else:
                             make_woocommerce_log(title=str(e), status="Error", method="sync_woocommerce_orders", message=frappe.get_traceback(),
                                 request_data=woocommerce_order, exception=True)
+            
+            # Check status before closing the order as synced
+            if woocommerce_order.get("status").lower() == "processing":
+                close_synced_woocommerce_order(woocommerce_order.get("id"))
 
                 
 def get_woocommerce_order_status_for_import():
@@ -436,7 +440,7 @@ def close_synced_woocommerce_orders():
     for woocommerce_order in get_woocommerce_orders():
         if woocommerce_order.get("status").lower() != "cancelled":
             order_data = {
-                "status": "completed"
+                "status": "pending_dispatch"
             }
             try:
                 put_request("orders/{0}".format(woocommerce_order.get("id")), order_data)
@@ -447,7 +451,7 @@ def close_synced_woocommerce_orders():
 
 def close_synced_woocommerce_order(wooid):
     order_data = {
-        "status": "completed"
+        "status": "pending_dispatch"
     }
     try:
         put_request("orders/{0}".format(wooid), order_data)
