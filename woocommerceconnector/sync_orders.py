@@ -34,13 +34,13 @@ def sync_woocommerce_orders():
                         make_woocommerce_log(status="Error", method="sync_woocommerce_orders", message=frappe.get_traceback(),
                             request_data=woocommerce_order, exception=True)
                     except Exception as e:
-                        if e.args and e.args[0] and e.args[0].decode("utf-8").startswith("402"):
+                        # if e.args and e.args[0] and e.args[0].decode("utf-8").startswith("402"):
+                        if e.args and e.args[0] == 402:   # Check if the first argument is 402
                             raise e
                         else:
-                            make_woocommerce_log(title=e.message, status="Error", method="sync_woocommerce_orders", message=frappe.get_traceback(),
+                            make_woocommerce_log(title=str(e), status="Error", method="sync_woocommerce_orders", message=frappe.get_traceback(),
                                 request_data=woocommerce_order, exception=True)
-            # close this order as synced
-            close_synced_woocommerce_order(woocommerce_order.get("id"))
+
                 
 def get_woocommerce_order_status_for_import():
     status_list = []
@@ -396,7 +396,7 @@ def update_taxes_with_shipping_lines(taxes, shipping_lines, woocommerce_settings
         #
         taxes.append({
             "charge_type": "Actual",
-            "account_head": get_shipping_account_head(shipping_charge),
+            "account_head": get_shipping_account_head(shipping_charge["method_title"]),
             "description": shipping_charge["method_title"],
             "tax_amount": shipping_charge["total"],
             "cost_center": woocommerce_settings.cost_center
@@ -406,16 +406,19 @@ def update_taxes_with_shipping_lines(taxes, shipping_lines, woocommerce_settings
 
 
 
-def get_shipping_account_head(shipping):
-        shipping_title = shipping.get("method_title").encode("utf-8")
 
-        shipping_account =  frappe.db.get_value("woocommerce Tax Account", \
-                {"parent": "WooCommerce Config", "woocommerce_tax": shipping_title}, "tax_account")
+def get_shipping_account_head(shipping_title):
+    # Assuming shipping_title is now a string
+    shipping_account = frappe.db.get_value("woocommerce Tax Account",
+                                           {"parent": "WooCommerce Config", "woocommerce_tax": shipping_title},
+                                           "tax_account")
 
-        if not shipping_account:
-                frappe.throw("Tax Account not specified for woocommerce shipping method  {0}".format(shipping.get("method_title")))
+    if not shipping_account:
+        frappe.throw("Tax Account not specified for woocommerce shipping method {0}".format(shipping_title))
 
-        return shipping_account
+    return shipping_account
+
+
 
 
 def get_tax_account_head(tax):
