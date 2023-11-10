@@ -61,6 +61,7 @@
   "sync_sales_invoice",
   "sales_invoice_series",
   "import_payment",
+  "delivery_after_days",
   "section_advanced",
   "sync_timeout",
   "trigger_update_item_stock"
@@ -354,6 +355,13 @@
    "fieldtype": "Check",
    "label": "Import Payments"
   },
+  {
+    "default": "7",
+    "description": "This is the default offset (days) for the Delivery Date in Sales Orders. The fallback offset is 7 days from the order placement date.",
+    "fieldname": "delivery_after_days",
+    "fieldtype": "Int",
+    "label": "Delivery After (Days)"
+   },
   {
    "fieldname": "section_advanced",
    "fieldtype": "Section Break",

@@ -189,6 +189,9 @@ def create_sales_order(woocommerce_order, woocommerce_settings, company=None):
 
         # get applicable tax rule from configuration
         tax_rules = frappe.get_all("WooCommerce Tax Rule", filters={'currency': woocommerce_order.get("currency")}, fields=['tax_rule'])
+        date = woocommerce_order.get("date_created")[:10]
+        delivery_after = woocommerce_settings.delivery_after_days or 7
+
         if not tax_rules:
             # fallback: currency has no tax rule, try catch-all
             tax_rules = frappe.get_all("WooCommerce Tax Rule", filters={'currency': "%"}, fields=['tax_rule'])
@@ -203,7 +206,7 @@ def create_sales_order(woocommerce_order, woocommerce_settings, company=None):
             "woocommerce_payment_method": woocommerce_order.get("payment_method_title"),
             "customer": customer,
             "customer_group": woocommerce_settings.customer_group,  # hard code group, as this was missing since v12
-            "delivery_date": nowdate(),
+            "delivery_date": frappe.utils.add_days(date, delivery_after),
             "company": woocommerce_settings.company,
             "selling_price_list": woocommerce_settings.price_list,
             "ignore_pricing_rule": 1,
@@ -216,7 +219,7 @@ def create_sales_order(woocommerce_order, woocommerce_settings, company=None):
             "taxes_and_charges": tax_rules,
             "customer_address": billing_address,
             "shipping_address_name": shipping_address,
-            "posting_date": woocommerce_order.get("date_created")[:10]          # pull posting date from WooCommerce
+            "posting_date": date          # pull posting date from WooCommerce
         })
 
         so.flags.ignore_mandatory = True
@@ -250,7 +253,7 @@ def get_customer_address_from_order(type, woocommerce_order, customer):
         if not frappe.db.exists("Country", country):
             country = "Switzerland"
         try :
-            address_name = frappe.get_doc({
+            address = frappe.get_doc({
                 "doctype": "Address",
                 "woocommerce_address_id": type,
                 "woocommerce_company_name": address_record.get("company") or '',
@@ -268,12 +271,14 @@ def get_customer_address_from_order(type, woocommerce_order, customer):
                     "link_doctype": "Customer",
                     "link_name": customer
                 }]
-            }).insert()
-            address_name = address_name.name
+            })
+            address.insert()
+            frappe.db.commit()
+            address_name = address.name
 
         except Exception as e:
             make_woocommerce_log(title=e, status="Error", method="create_customer_address", message=frappe.get_traceback(),
-                    request_data=woocommerce_customer, exception=True)
+                    request_data=woocommerce_order, exception=True)
 
     return address_name
 
