@@ -40,7 +40,7 @@ def sync_woocommerce_orders():
                             make_woocommerce_log(title=e.message, status="Error", method="sync_woocommerce_orders", message=frappe.get_traceback(),
                                 request_data=woocommerce_order, exception=True)
             # close this order as synced
-            close_synced_woocommerce_order(woocommerce_order.get("id"))
+            # close_synced_woocommerce_order(woocommerce_order.get("id"))
                 
 def get_woocommerce_order_status_for_import():
     status_list = []
@@ -191,6 +191,7 @@ def create_sales_order(woocommerce_order, woocommerce_settings, company=None):
         tax_rules = frappe.get_all("WooCommerce Tax Rule", filters={'currency': woocommerce_order.get("currency")}, fields=['tax_rule'])
         date = woocommerce_order.get("date_created")[:10]
         delivery_after = woocommerce_settings.delivery_after_days or 7
+        due_date = frappe.utils.add_days(date, delivery_after)
 
         if not tax_rules:
             # fallback: currency has no tax rule, try catch-all
@@ -206,11 +207,11 @@ def create_sales_order(woocommerce_order, woocommerce_settings, company=None):
             "woocommerce_payment_method": woocommerce_order.get("payment_method_title"),
             "customer": customer,
             "customer_group": woocommerce_settings.customer_group,  # hard code group, as this was missing since v12
-            "delivery_date": frappe.utils.add_days(date, delivery_after),
+            "delivery_date": due_date,
             "company": woocommerce_settings.company,
             "selling_price_list": woocommerce_settings.price_list,
             "ignore_pricing_rule": 1,
-            "items": get_order_items(woocommerce_order.get("line_items"), woocommerce_settings),
+            "items": get_order_items(woocommerce_order.get("line_items"), woocommerce_settings, due_date),
             "taxes": get_order_taxes(woocommerce_order, woocommerce_settings),
             # disabled discount as WooCommerce will send this both in the item rate and as discount
             #"apply_discount_on": "Net Total",
@@ -219,7 +220,8 @@ def create_sales_order(woocommerce_order, woocommerce_settings, company=None):
             "taxes_and_charges": tax_rules,
             "customer_address": billing_address,
             "shipping_address_name": shipping_address,
-            "posting_date": date          # pull posting date from WooCommerce
+            "payment_schedule": get_order_terms(woocommerce_order, woocommerce_settings, date),
+            "transaction_date": date        # pull posting date from WooCommerce
         })
 
         so.flags.ignore_mandatory = True
@@ -329,14 +331,25 @@ def get_fulfillment_items(dn_items, fulfillment_items, woocommerce_settings):
     #discounted_amount = flt(order.get("discount_total") or 0)
     #return discounted_amount
 
-def get_order_items(order_items, woocommerce_settings):
+def get_order_terms(woocommerce_order, woocommerce_settings, delivery_date):
+    terms = []
+    terms.append({
+        "payment_term": woocommerce_order.get("payment_method_title"),
+        "due_date": delivery_date,
+        "payment_amount": flt(woocommerce_order.get("total") or 0),
+        "invoice_portion": 100
+    })
+    return terms
+
+
+def get_order_items(order_items, woocommerce_settings, delivery_date):
     items = []
     for woocommerce_item in order_items:
         item_code = get_item_code(woocommerce_item)
         items.append({
             "item_code": item_code,
             "rate": woocommerce_item.get("price"),
-            "delivery_date": nowdate(),
+            "delivery_date": delivery_date,
             "qty": woocommerce_item.get("quantity"),
             "warehouse": woocommerce_settings.warehouse
         })
