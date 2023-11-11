@@ -369,30 +369,27 @@ def get_item_code(woocommerce_item):
 def get_order_taxes(woocommerce_order, woocommerce_settings):
     taxes = []
     for tax in woocommerce_order.get("tax_lines"):
+        rate_id = tax.get("rate_id")
+        if rate_id < 1000000:
+            woocommerce_tax = get_woocommerce_tax(rate_id)
+            rate = woocommerce_tax.get("rate")
+            name = woocommerce_tax.get("name")
+            description = "{0} - {1}%".format(name, rate)
+        else:
+            # Using TaxJar, so rates are all 9999999999
+            woocommerce_tax = None
+            description =  "TaxJar: ({0})".format(rate_id)
         
-        woocommerce_tax = get_woocommerce_tax(tax.get("rate_id"))
-        rate = woocommerce_tax.get("rate")
-        name = woocommerce_tax.get("name")
-        
+
         taxes.append({
             "charge_type": "Actual",
             "account_head": get_tax_account_head(woocommerce_tax, woocommerce_settings.default_tax_account),
-            "description": "{0} - {1}%".format(name, rate),
-            "rate": rate,
+            "description": description,
+            #"rate": rate,
             "tax_amount": flt(tax.get("tax_total") or 0) + flt(tax.get("shipping_tax_total") or 0), 
             "included_in_print_rate": 0,
             "cost_center": woocommerce_settings.cost_center
         })
-    # old code with conditional brutto/netto prices
-    # taxes.append({
-        #     "charge_type": "On Net Total" if woocommerce_order.get("prices_include_tax") else "Actual",
-        #     "account_head": get_tax_account_head(woocommerce_tax),
-        #     "description": "{0} - {1}%".format(name, rate),
-        #     "rate": rate,
-        #     "tax_amount": flt(tax.get("tax_total") or 0) + flt(tax.get("shipping_tax_total") or 0), 
-        #     "included_in_print_rate": 1 if woocommerce_order.get("prices_include_tax") else 0,
-        #     "cost_center": woocommerce_settings.cost_center
-        # })
     taxes = update_taxes_with_fee_lines(taxes, woocommerce_order.get("fee_lines"), woocommerce_settings)
     taxes = update_taxes_with_shipping_lines(taxes, woocommerce_order.get("shipping_lines"), woocommerce_settings)
 
