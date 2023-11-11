@@ -40,16 +40,8 @@ def sync_woocommerce_orders():
                         else:
                             make_woocommerce_log(title=str(e), status="Error", method="sync_woocommerce_orders", message=frappe.get_traceback(),
                                 request_data=woocommerce_order, exception=True)
-<<<<<<< HEAD
             # close this order as synced
             # close_synced_woocommerce_order(woocommerce_order.get("id"))
-=======
-            
-            # Check status before closing the order as synced
-            if woocommerce_order.get("status").lower() == "processing":
-                close_synced_woocommerce_order(woocommerce_order.get("id"))
-
->>>>>>> flexcomng
                 
 def get_woocommerce_order_status_for_import():
     status_list = []
@@ -423,11 +415,7 @@ def update_taxes_with_shipping_lines(taxes, shipping_lines, woocommerce_settings
         #
         taxes.append({
             "charge_type": "Actual",
-<<<<<<< HEAD
-            "account_head": get_shipping_account_head(shipping_charge, woocommerce_settings.default_shipping_account),
-=======
-            "account_head": get_shipping_account_head(shipping_charge["method_title"]),
->>>>>>> flexcomng
+            "account_head": get_shipping_account_head(shipping_charge["method_title"], woocommerce_settings.default_shipping_account),
             "description": shipping_charge["method_title"],
             "tax_amount": shipping_charge["total"],
             "cost_center": woocommerce_settings.cost_center
@@ -437,9 +425,7 @@ def update_taxes_with_shipping_lines(taxes, shipping_lines, woocommerce_settings
 
 
 
-<<<<<<< HEAD
-def get_shipping_account_head(shipping, default):
-    shipping_title = shipping.get("method_title")
+def get_shipping_account_head(shipping_title, default):
     if shipping_title:
         shipping_account =  frappe.db.get_value("woocommerce Tax Account", \
                 {"parent": "WooCommerce Config", "woocommerce_tax": shipping_title}, "tax_account")
@@ -451,21 +437,6 @@ def get_shipping_account_head(shipping, default):
             frappe.throw("Tax Account not specified for woocommerce shipping method  {0}".format(shipping_title))
 
     return shipping_account
-=======
-
-def get_shipping_account_head(shipping_title):
-    # Assuming shipping_title is now a string
-    shipping_account = frappe.db.get_value("woocommerce Tax Account",
-                                           {"parent": "WooCommerce Config", "woocommerce_tax": shipping_title},
-                                           "tax_account")
-
-    if not shipping_account:
-        frappe.throw("Tax Account not specified for woocommerce shipping method {0}".format(shipping_title))
-
-    return shipping_account
-
-
->>>>>>> flexcomng
 
 
 def get_tax_account_head(tax, default):
