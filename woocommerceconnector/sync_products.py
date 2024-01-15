@@ -232,6 +232,11 @@ def is_item_exists(item_dict, attributes=None, variant_of=None, woocommerce_item
     erp_item_match = frappe.get_all("Item", 
                 filters={'woocommerce_product_id': item_dict.get("woocommerce_product_id")},
                 fields=['name', 'stock_uom'])
+
+    erp_item_match += frappe.get_all("Item", 
+                filters={'item_code': item_dict.get("stock_keeping_unit")},
+                fields=['name', 'stock_uom'])
+
     if len(erp_item_match) > 0:
         # item does exist in ERP --> Update
         update_item(item_details=erp_item_match[0], item_dict=item_dict)
