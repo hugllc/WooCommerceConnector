@@ -233,7 +233,9 @@ def is_item_exists(item_dict, attributes=None, variant_of=None, woocommerce_item
                 filters={'woocommerce_product_id': item_dict.get("woocommerce_product_id")},
                 fields=['name', 'stock_uom'])
 
-    erp_item_match += frappe.get_all("Item", 
+    if len(erp_item_match) == 0:
+        # No results, so try by sku number
+        erp_item_match = frappe.get_all("Item", 
                 filters={'item_code': item_dict.get("stock_keeping_unit")},
                 fields=['name', 'stock_uom'])
 
