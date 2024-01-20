@@ -15,8 +15,8 @@ AGPL
 On the ERPNext server, run
 
     $ cd /home/frappe/frappe-bench
-	$ bench get-app https://github.com/libracore/woocommerceconnector.git
-	$ bench install-app woocommerceconnector
+	$ bench get-app https://github.com/hugllc/woocommerceconnector.git
+	$ bench --site your.site.name install-app woocommerceconnector
 ## Notes
 
 This is a copy of https://github.com/libracore/WooCommerceConnector.  It is not a 'fork' in github because we are customizing this for our needs, with changes
