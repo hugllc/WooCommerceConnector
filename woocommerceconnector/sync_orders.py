@@ -437,7 +437,8 @@ def get_shipping_account_head(shipping_title, default):
 
 
 def get_tax_account_head(tax, default):
-    tax_title = tax.get("name") or tax.get("method_title")
+    if tax:
+        tax_title = tax.get("name") or tax.get("method_title")
     if tax_title:
         tax_account =  frappe.db.get_value("woocommerce Tax Account", \
             {"parent": "WooCommerce Config", "woocommerce_tax": tax_title}, "tax_account")
